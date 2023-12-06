@@ -28,7 +28,8 @@ get_locations <- function(seeds) {
     # each iteration produces the input to the next iteration
     dest <- s
     # this loop walks through each group for this seed
-    for (i in 1:length(group_inds)) {
+    # for (i in 1:length(group_inds)) {
+    walk(1:length(group_inds), function(i) {
       if (group_inds[i] == group_inds[length(group_inds)]) {
         this <- less_one[c(group_inds[i]:nrow(less_one)),]
       } else {
@@ -69,13 +70,56 @@ get_locations <- function(seeds) {
         # cat(crayon::cyan(glue::glue("Seed {ss}")), "\n")
         location <- ss
       }
-      
-      dest <- location
-    }
-    return(dest)
+      cat(which(seeds == s), "\n")
+      dest <<- location
+    })
+    dest
+    
+    
   }) 
 }
 
+start_time <- Sys.time()
+cat(glue("Start Time: {start_time}"), "\n")
 get_locations(seeds) |> 
   min()
+end_time <- Sys.time()
+cat(glue("Total time: {end_time - start_time}"))
 
+# Part 2 ----------
+library(doParallel)
+library(parallel)
+library(glue)
+
+start_inds <- seq(from = 1, to = length(seeds), by = 2)
+range_inds <- seq(from = 2, to = length(seeds), by = 2)
+
+get_min <- function(i) {
+  these_seeds <- seq(from = seeds[start_inds[i]] |> 
+                       as.numeric(),
+                     length.out = seeds[range_inds[i]] |> 
+                       as.numeric(),
+                     by = 1)
+  this_min <- get_locations(these_seeds) |> 
+    min()
+  
+  saveRDS(this_min, glue("data/day_5/part_2/{i}_min.rda"))
+}
+
+{
+  start_time <- Sys.time()
+  cat(glue("Start Time: {start_time}"), "\n")
+  registerDoParallel(10)
+  
+  foreach(i = 1:length(start_inds)) %dopar% get_min(i)
+  
+  ff <- list.files("data/day_5/part_2")
+  end_time <- Sys.time()
+  cat(glue("Total time: {end_time - start_time}"))
+}
+
+
+map_dbl(ff, function(f) {
+  read_rds(glue("data/day_5/part_2/{f}"))
+}) |> 
+  min()
