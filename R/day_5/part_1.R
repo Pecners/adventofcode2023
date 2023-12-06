@@ -5,25 +5,29 @@ d <- read.delim("data/day_5/puzzle.txt", header = FALSE)
 # Part 1 ----------
 library(tidyverse)
 
+# vector of seeds
 seeds <- strsplit(d[1,], split = " ") |> 
   unlist() |> 
   setdiff("seeds:")
 
-# each line has a source range, which are seed numbers,
-# and destination ranges, which are locations
-# any seed not included has the same destination as its number (e.g., 10=10)
+# remove first row with seed data
 less_one <- d |> 
   filter(row_number() != 1) 
+
+# get vector that represents starting row of groups
 group_start <- less_one |> 
   mutate(group_start = str_detect(V1, ":")) |> 
   pull(group_start)
 group_inds <- which(group_start)
 
-# CHANGE -- FOR EACH SEED, WALK THROUGH TO LOCATION
+# FOR EACH SEED, WALK THROUGH TO LOCATION
 
 get_locations <- function(seeds) {
+  # for each seed, walk through the process to find the location
   map_dbl(seeds, function(s) {
+    # each iteration produces the input to the next iteration
     dest <- s
+    # this loop walks through each group for this seed
     for (i in 1:length(group_inds)) {
       if (group_inds[i] == group_inds[length(group_inds)]) {
         this <- less_one[c(group_inds[i]:nrow(less_one)),]
